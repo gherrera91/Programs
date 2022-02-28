@@ -29,6 +29,8 @@ import java.net.Socket;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.lang.Runnable; 
+import java.io.*; 
 
 public class WebWorker implements Runnable
 {
@@ -50,14 +52,16 @@ public class WebWorker implements Runnable
 	 **/
 	public void run()
 	{
+		String address = "";
+
 		System.err.println("Handling connection...");
 		try
 		{
 			InputStream is = socket.getInputStream();
 			OutputStream os = socket.getOutputStream();
-			readHTTPRequest(is);
-			writeHTTPHeader(os, "text/html");
-			writeContent(os);
+			address = readHTTPRequest(is);
+			writeHTTPHeader(os, "text/html",address);
+			writeContent(os,"text/html", address);
 			os.flush();
 			socket.close();
 		}
@@ -72,10 +76,12 @@ public class WebWorker implements Runnable
 	/**
 	 * Read the HTTP request header.
 	 **/
-	private void readHTTPRequest(InputStream is)
+	private String readHTTPRequest(InputStream is)
 	{
 		String line;
 		BufferedReader r = new BufferedReader(new InputStreamReader(is));
+
+		String address = ""; 
 		while (true)
 		{
 			try
@@ -83,6 +89,14 @@ public class WebWorker implements Runnable
 				while (!r.ready())
 					Thread.sleep(1);
 				line = r.readLine();
+				if(line.contains("GET")){
+					address = line.substring(4); 
+					for(int i = 0; i<address.length(); i++){
+						if(address.charAt(i)==' '){
+							address = address.substring(0,i);
+						} 
+					}
+				}
 				System.err.println("Request line: (" + line + ")");
 				if (line.length() == 0)
 					break;
@@ -93,7 +107,7 @@ public class WebWorker implements Runnable
 				break;
 			}
 		}
-		return;
+		return address;
 	}
 
 	/**
@@ -104,11 +118,24 @@ public class WebWorker implements Runnable
 	 * @param contentType
 	 *          is the string MIME content type (e.g. "text/html")
 	 **/
-	private void writeHTTPHeader(OutputStream os, String contentType) throws Exception
+	private void writeHTTPHeader(OutputStream os, String contentType, String address) throws Exception
 	{
 		Date d = new Date();
 		DateFormat df = DateFormat.getDateTimeInstance();
 		df.setTimeZone(TimeZone.getTimeZone("GMT"));
+
+		String copy = '.' + address; 
+		File f = new File(copy); 
+
+		try{
+			FileReader file = new FileReader(f); 
+			BufferedReader r = new BufferedReader(file); 
+		}
+		catch(Exception e){
+			System.out.println("File not found:" + address); 
+			os.write("HTTP/1.1 404 Error: Not Found\n".getBytes()); 
+		}
+
 		os.write("HTTP/1.1 200 OK\n".getBytes());
 		os.write("Date: ".getBytes());
 		os.write((df.format(d)).getBytes());
@@ -130,11 +157,42 @@ public class WebWorker implements Runnable
 	 * @param os
 	 *          is the OutputStream object to write to
 	 **/
-	private void writeContent(OutputStream os) throws Exception
+	private void writeContent(OutputStream os, String contentType, String address) throws Exception
 	{
-		os.write("<html><head></head><body>\n".getBytes());
-		os.write("<h3>My web server works!</h3>\n".getBytes());
-		os.write("</body></html>\n".getBytes());
+		Date d = new Date(); 
+		DateFormat dformat = DateFormat.getDateInstance(); 
+		dformat.setTimeZone(TimeZone.getTimeZone("GMT"));
+
+		String fcont = ""; 
+		String copy = "." + address.substring(0,address.length()); 
+		String date = dformat.format(d); 
+		File f = new File(copy); 
+
+		try{
+			FileReader fRead = new FileReader(f); 
+			BufferedReader fBuff = new BufferedReader(fRead); 
+
+			while((fcont = fBuff.readLine()) != null){
+				os.write(fcont.getBytes()); 
+				os.write("\n".getBytes()); 
+			
+
+			if (fcont.contains("<cs371date>")){
+				os.write(date.getBytes());
+			}
+
+			if(fcont.contains("<cs371server")){
+				os.write("Geralds Server \n".getBytes()); 
+			}
+		}
+		}
+		catch (Exception e){
+			System.err.println("File Not Found:" + address); 
+			os.write("<h1>404 Error: Not Found <h1> \n".getBytes()); 
+		}
+		//os.write("<html><head></head><body>\n".getBytes());
+		//os.write("<h3>My web server works!</h3>\n".getBytes());
+		//os.write("</body></html>\n".getBytes());
 	}
 
 } // end class

@@ -19,6 +19,11 @@ import java.net.Socket;
 
 public class WebServer
 {
+	/**
+	 *
+	 */
+	private static final int _8080 = 8080;
+
 	private ServerSocket	socket;
 
 	private boolean				running;
@@ -84,7 +89,7 @@ public class WebServer
 	 **/
 	public static void main(String args[])
 	{
-		int port = 8080;
+		int portId = _8080;
 		if (args.length > 1)
 		{
 			System.err.println("Usage: java Webserver <portNumber>");
@@ -94,7 +99,7 @@ public class WebServer
 		{
 			try
 			{
-				port = Integer.parseInt(args[0]);
+				portId = Integer.parseInt(args[0]);
 			}
 			catch (Exception e)
 			{
@@ -103,7 +108,7 @@ public class WebServer
 			}
 		}
 		WebServer server = new WebServer();
-		if (!server.start(port))
+		if (!server.start(portId))
 		{
 			System.err.println("Execution failed!");
 		}

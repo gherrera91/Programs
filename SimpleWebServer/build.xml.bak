@@ -22,7 +22,7 @@
 <target name = "run" depends ="compile" description="run JAVA class">
 	<!-- runs the javacode -->
 	<java classname = "edu.nmsu.cs.webserver.WebServer">
-		<classpath path ="${build}"/>
+		<classpath path ="${bin}"/>
 	</java>
 </target>
 
