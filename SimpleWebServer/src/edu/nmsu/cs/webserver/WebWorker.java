@@ -52,7 +52,8 @@ public class WebWorker implements Runnable
 	 **/
 	public void run()
 	{
-		String address = "";
+		String address = ""; // initializes the address 
+		String contentType = "text/html"; 
 
 		System.err.println("Handling connection...");
 		try
@@ -60,8 +61,23 @@ public class WebWorker implements Runnable
 			InputStream is = socket.getInputStream();
 			OutputStream os = socket.getOutputStream();
 			address = readHTTPRequest(is);
-			writeHTTPHeader(os, "text/html",address);
-			writeContent(os,"text/html", address);
+
+			if(address.contains(".png")){
+				contentType = "image/png"; 
+			}
+			else if(address.contains(".jpg")){
+				contentType = "image/png"; 
+			}
+			else if(address.contains(".jpeg")){
+				contentType = "image/jpeg";
+			}
+			else if(address.contains(".gif")){
+				contentType = "image/gif"; 
+			}
+
+			writeHTTPHeader(os, contentType,address);
+			writeContent(os,contentType, address);
+
 			os.flush();
 			socket.close();
 		}
@@ -89,7 +105,7 @@ public class WebWorker implements Runnable
 				while (!r.ready())
 					Thread.sleep(1);
 				line = r.readLine();
-				if(line.contains("GET")){
+				if(line.contains("GET")){ 
 					address = line.substring(4); 
 					for(int i = 0; i<address.length(); i++){
 						if(address.charAt(i)==' '){
@@ -126,7 +142,7 @@ public class WebWorker implements Runnable
 
 		String copy = '.' + address; 
 		File f = new File(copy); 
-
+		
 		try{
 			FileReader file = new FileReader(f); 
 			BufferedReader r = new BufferedReader(file); 
@@ -135,6 +151,8 @@ public class WebWorker implements Runnable
 			System.out.println("File not found:" + address); 
 			os.write("HTTP/1.1 404 Error: Not Found\n".getBytes()); 
 		}
+		
+		
 
 		os.write("HTTP/1.1 200 OK\n".getBytes());
 		os.write("Date: ".getBytes());
@@ -164,32 +182,45 @@ public class WebWorker implements Runnable
 		dformat.setTimeZone(TimeZone.getTimeZone("GMT"));
 
 		String fcont = ""; 
-		String copy = "." + address.substring(0,address.length()); 
+		String copy = "." + address.substring(0, address.length()); 
 		String date = dformat.format(d); 
 		File f = new File(copy); 
+		if(contentType.contains("text/html")){
+			try{
+				FileReader fRead = new FileReader(f); 
+				BufferedReader fBuff = new BufferedReader(fRead); 
 
-		try{
-			FileReader fRead = new FileReader(f); 
-			BufferedReader fBuff = new BufferedReader(fRead); 
-
-			while((fcont = fBuff.readLine()) != null){
-				os.write(fcont.getBytes()); 
-				os.write("\n".getBytes()); 
+				while((fcont = fBuff.readLine()) != null){
+					os.write(fcont.getBytes()); 
+					os.write("\n".getBytes()); 
 			
 
-			if (fcont.contains("<cs371date>")){
-				os.write(date.getBytes());
-			}
+					if (fcont.contains("<cs371date>")){
+						os.write(date.getBytes());
+					}
 
-			if(fcont.contains("<cs371server")){
-				os.write("Geralds Server \n".getBytes()); 
+					if(fcont.contains("<cs371server")){
+						os.write("Geralds Server \n".getBytes()); 
+					}
+				}
+			}
+			catch (Exception e){
+				System.err.println("File Not Found:" + address); 
+				os.write("<h1>404 Error: Not Found <h1> \n".getBytes()); 
 			}
 		}
+		else if(contentType.contains("image")){
+			int marker; 
+			FileInputStream ff = new FileInputStream(f); 
+			int size = (int) f.length();
+			byte x[] = new byte[size]; 
+			while((marker = ff.read(x)) > 0){
+				os.write(x,0,marker); 
+
+			} 
+
 		}
-		catch (Exception e){
-			System.err.println("File Not Found:" + address); 
-			os.write("<h1>404 Error: Not Found <h1> \n".getBytes()); 
-		}
+
 		//os.write("<html><head></head><body>\n".getBytes());
 		//os.write("<h3>My web server works!</h3>\n".getBytes());
 		//os.write("</body></html>\n".getBytes());

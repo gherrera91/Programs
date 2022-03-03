@@ -1,0 +1,8 @@
+1. 1 hour 
+2. 2 hours 
+3. 1 hour 
+total = 4 hours 
+
+actual = 6 hours 
+
+6% 

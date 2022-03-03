@@ -1,4 +1,4 @@
-<project name= "SimpleWebServer" default="compile" basedir="."> 
+<project name= "SimpleWebServer" default="run" basedir="."> 
 <description> 
 	Simple Web Server 
 </description>
